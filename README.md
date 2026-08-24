@@ -100,6 +100,30 @@ INDEX SCAN users AS users USING idx_city (city='pune') (est 1 rows)
 6. **Lazy catalog snapshots** — read-only transactions skip snapshotting and WAL appends entirely; writes pay only for what they change.
 7. **Differential testing as the spec** — where SQL semantics get subtle (3VL, NULL ordering, LIKE coercion, IN-with-NULL), SQLite is the oracle and CI enforces agreement.
 
+## leafdb-core — the C++17 storage core
+
+`native/` contains a **binary-compatible C++ implementation of the storage hot
+path**: the same 4 KB page format, the same B+ tree node encoding (big-endian,
+zlib CRC32 WAL frames). Python writes files C++ reads; C++ writes files Python
+reads — enforced by `tests/native_compat.py`.
+
+```bash
+make -C native test          # 9 native test cases incl. randomized oracle
+make -C native               # builds native/build/leafdb-core
+
+# point lookups against a 20k-row tree:
+./native/build/leafdb-core bench mydata.db 20000
+# → inserted 20000 rows ... point lookups ... ~11 us/op
+```
+
+| Implementation | Point lookup (raw B+ tree) |
+|---|---|
+| **leafdb-core (C++17)** | **~11 µs** |
+| LeafDB (Python) | ~22 µs |
+
+The SQL layer stays in Python; the native core is the storage engine it can sit
+on (same design as SQLite: thin language bindings over a C core).
+
 ## Known limitations (honesty section)
 
 - INT/TEXT stored types only; floats exist in expressions but not in columns.

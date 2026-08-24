@@ -135,6 +135,7 @@ class Pager:
         for n in sorted(self.pool.dirty):
             self._write_page(n, self.pool.pages[n])
         self.pool.dirty.clear()
+        self.file.flush()
         if fsync:
             self.sync()
 

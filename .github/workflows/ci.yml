@@ -24,3 +24,35 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Demo smoke test
         run: python demo.py
+
+  native:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build leafdb-core (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update && sudo apt-get install -y g++ make
+          make -C native test
+          make -C native build/leafdb-core
+      - name: Build leafdb-core (Windows/MinGW)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          choco install mingw -y --no-progress
+          RefreshEnv.cmd
+          $env:Path = "C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin;$env:Path"
+          g++ --version
+          g++ -std=c++17 -O2 -Wall -Wextra -static -static-libgcc -static-libstdc++ -Inative/include native/src/core.cpp native/tests/test_core.cpp -o native/build/test_core.exe
+          .\native\build\test_core.exe
+      - name: Cross-language compat (Python ↔ C++)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: python -m unittest tests.native_compat -v

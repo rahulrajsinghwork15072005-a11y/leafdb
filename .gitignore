@@ -10,3 +10,5 @@ notes.db
 .env
 .DS_Store
 Thumbs.db
+native/build/
+
