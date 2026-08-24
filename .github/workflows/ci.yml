@@ -42,17 +42,31 @@ jobs:
           sudo apt-get update && sudo apt-get install -y g++ make
           make -C native test
           make -C native build/leafdb-core
+      - name: Cross-language compat (Python <-> C++, Linux)
+        if: runner.os == 'Linux'
+        run: python -m unittest tests.native_compat -v
       - name: Build leafdb-core (Windows/MinGW)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          choco install mingw -y --no-progress
-          RefreshEnv.cmd
-          $env:Path = "C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin;$env:Path"
+          $ProgressPreference = 'SilentlyContinue'
+          $zip = "$env:RUNNER_TEMP\winlibs.zip"
+          Invoke-WebRequest -Uri "https://github.com/brechtsanders/winlibs_mingw/releases/download/14.2.0posix-19.1.1-12.0.0-r2/winlibs-x86_64-posix-seh-gcc-14.2.0-llvm-19.1.1-mingw-w64ucrt-r2.zip" -OutFile $zip
+          Expand-Archive -Path $zip -DestinationPath C:\winlibs -Force
+          $gpp = Get-ChildItem C:\winlibs -Recurse -Filter g++.exe | Select-Object -First 1 -ExpandProperty FullName
+          $env:Path = "$(Split-Path $gpp);$env:Path"
           g++ --version
           g++ -std=c++17 -O2 -Wall -Wextra -static -static-libgcc -static-libstdc++ -Inative/include native/src/core.cpp native/tests/test_core.cpp -o native/build/test_core.exe
           .\native\build\test_core.exe
-      - name: Cross-language compat (Python ↔ C++)
+      - name: Cross-language compat (Python <-> C++)
         if: runner.os == 'Windows'
         shell: pwsh
-        run: python -m unittest tests.native_compat -v
+        run: |
+          $ProgressPreference = 'SilentlyContinue'
+          $zip = "$env:RUNNER_TEMP\winlibs.zip"
+          Invoke-WebRequest -Uri "https://github.com/brechtsanders/winlibs_mingw/releases/download/14.2.0posix-19.1.1-12.0.0-r2/winlibs-x86_64-posix-seh-gcc-14.2.0-llvm-19.1.1-mingw-w64ucrt-r2.zip" -OutFile $zip
+          Expand-Archive -Path $zip -DestinationPath C:\winlibs -Force
+          $gpp = Get-ChildItem C:\winlibs -Recurse -Filter g++.exe | Select-Object -First 1 -ExpandProperty FullName
+          $env:Path = "$(Split-Path $gpp);$env:Path"
+          g++ -std=c++17 -O2 -Inative/include native/src/core.cpp native/tools/cli.cpp -o native/build/leafdb-core.exe -static -static-libgcc -static-libstdc++
+          python -m unittest tests.native_compat -v
