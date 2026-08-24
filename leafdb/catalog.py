@@ -68,6 +68,7 @@ class TableMeta:
 class Catalog:
     def __init__(self):
         self.tables = {}
+        self.free_pages: list[int] = []
 
     def get(self, name):
         meta = self.tables.get(name.lower())
@@ -81,7 +82,10 @@ class Catalog:
         self.tables[meta.name] = meta
 
     def to_json(self):
-        return json.dumps({"tables": {n: m.to_dict() for n, m in self.tables.items()}})
+        return json.dumps({
+            "tables": {n: m.to_dict() for n, m in self.tables.items()},
+            "free_pages": self.free_pages,
+        })
 
     def save(self, pager):
         raw = self.to_json().encode("utf-8")

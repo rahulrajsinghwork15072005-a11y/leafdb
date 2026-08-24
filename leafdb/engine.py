@@ -7,6 +7,7 @@ from collections import OrderedDict
 from . import rows as rows_mod
 from .btree import BTree, DuplicateKey, Leaf, MAX_VALUE_SIZE
 from .catalog import Catalog, CatalogError, TableMeta
+from .freelist import collect_tree_pages
 from .executor import ExecutionError, Executor, Scope, compile_expr, eval_expr
 from .planner import build_select_plan, find_equi_predicates, flatten_and
 from .pager import Pager
@@ -448,10 +449,14 @@ class Database:
             cols.append(norm)
         if len(pks) > 1:
             raise CatalogError("only one PRIMARY KEY column is supported")
-        meta = TableMeta(name=name, columns=cols, root_page=None)
-        root = self.pager.allocate()
+        root = None
+        fl = getattr(self.catalog, "free_pages", None)
+        if fl:
+            root = fl.pop()
+        if root is None:
+            root = self.pager.allocate()
         self.pager.write(root, Leaf().to_bytes())
-        meta.root_page = root
+        meta = TableMeta(name=name, columns=cols, root_page=root)
         self.catalog.add(meta)
         self.catalog.save(self.pager)
         return f"table {name!r} created"
@@ -478,12 +483,19 @@ class Database:
 
     def _drop_table(self, stmt):
         self._ensure_snapshot()
+        from .btree import Leaf
         meta = self.catalog.get(stmt.name)
         for col in list(meta.indexes):
             self.indexes.pop((meta.name, col), None)
+        pages = collect_tree_pages(self.btree, meta.root_page)
+        pages.add(meta.root_page)
+        for pg in sorted(pages, reverse=True):
+            if not hasattr(self.catalog, "free_pages") or self.catalog.free_pages is None:
+                self.catalog.free_pages = []
+            self.catalog.free_pages.append(pg)
         del self.catalog.tables[meta.name]
         self.catalog.save(self.pager)
-        return f"table {meta.name!r} dropped"
+        return f"table {meta.name!r} dropped ({len(pages)} pages reclaimed)"
 
     def _drop_index(self, stmt):
         self._ensure_snapshot()
