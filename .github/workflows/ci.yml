@@ -53,9 +53,9 @@ jobs:
         shell: cmd
         run: |
           mkdir native\build 2>nul
-          cl /nologo /EHsc /std:c++17 /O2 /W4 /Iinclude native\src\core.cpp native\tests\test_core.cpp /Fe:native\build\test_core.exe
-          build\test_core.exe
-          cl /nologo /EHsc /std:c++17 /O2 /W4 /Iinclude native\src\core.cpp native\tools\cli.cpp /Fe:native\build\leafdb-core.exe
+          cl /nologo /EHsc /std:c++17 /O2 /W4 /Inative\include native\src\core.cpp native\tests\test_core.cpp /Fe:native\build\test_core.exe
+          native\build\test_core.exe
+          cl /nologo /EHsc /std:c++17 /O2 /W4 /Inative\include native\src\core.cpp native\tools\cli.cpp /Fe:native\build\leafdb-core.exe
       - name: Cross-language compat (Python <-> C++)
         if: runner.os == 'Windows'
         shell: pwsh
