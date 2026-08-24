@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "leafdb"
+version = "2.0.0"
+description = "A SQLite-inspired relational database engine from scratch in pure Python: B+ tree storage, WAL crash recovery, SQL parser/planner/executor."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Rahul Raj Singh" }]
+keywords = ["database", "btree", "storage-engine", "sql", "education"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Topic :: Database :: Database Engines/Servers",
+]
+dependencies = []
+
+[project.scripts]
+leafdb = "leafdb.repl:console_main"
+
+[tool.setuptools.packages.find]
+include = ["leafdb*"]
