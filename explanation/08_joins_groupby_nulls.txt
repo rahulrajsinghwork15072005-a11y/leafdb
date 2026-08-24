@@ -1,0 +1,48 @@
+=====================================================================
+ 08 - JOINS, GROUP BY, AND THE STRANGE WORLD OF NULL
+=====================================================================
+
+JOINS: MATCHING ROWS FROM TWO TABLES
+
+users: (1,ada) (2,grace)          orders: (100,user1) (101,user2)
+
+"Show each order with its user's name" needs a JOIN on the matching
+column. Two algorithms exist:
+
+  NESTED LOOP - for every order, look through every user. Simple,
+  but 20,000 x 200 = 4 million comparisons.
+
+  HASH JOIN - build a dictionary of users keyed by id (200 entries),
+  then probe it once per order. ~20,200 steps. The planner picks
+  this whenever the join condition is a simple equality and it is
+  cheaper.
+
+OUTER JOINS keep unmatched rows:
+
+  LEFT JOIN  - keep all left rows; missing right side becomes NULL
+  RIGHT      - same but for the other table
+  FULL       - keep both sides' orphans
+
+GROUP BY: COLLAPSING MANY ROWS INTO ONE PER GROUP
+
+"COUNT(*) per city" groups rows sharing a city and runs an aggregate
+(COUNT/SUM/AVG/MIN/MAX) inside each group. HAVING filters groups
+after aggregation ("... HAVING n > 5"). Aggregates ignore NULLs:
+SUM over a column with NULLs skips them.
+
+NULL: THE THIRD TRUTH VALUE
+
+This surprises everyone. In SQL, comparing anything to NULL gives
+not FALSE but UNKNOWN. And WHERE keeps only rows where the condition
+is exactly TRUE. So:
+
+    age > 30        row with age=NULL  -> UNKNOWN -> filtered out!
+    NOT (age = 30)  same row           -> still UNKNOWN -> filtered!
+
+This is called THREE-VALUED LOGIC and LeafDB implements it exactly,
+using None as the third value everywhere in its evaluator. That is
+why "IS NULL" exists as its own operator - it is the only comparison
+that returns TRUE/FALSE about NULLs directly.
+
+The differential test suite compares hundreds of such queries against
+SQLite to make sure LeafDB gets these rules byte-for-byte right.

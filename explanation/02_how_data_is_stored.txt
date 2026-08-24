@@ -1,0 +1,48 @@
+=====================================================================
+ 02 - HOW DATA IS ACTUALLY STORED (PAGES AND ROWS)
+=====================================================================
+
+THE ANALOGY: A FILING CABINET
+
+Think of the database file as a filing cabinet. Every drawer is
+exactly the same size and holds one PAGE. In LeafDB a page is 4096
+bytes (4 KB) - the same size real databases like SQLite use.
+
+WHY FIXED SIZE?
+
+Because "go to drawer number 7" must be instant. If pages had random
+sizes, finding page 7 would mean reading everything before it. With
+fixed size, page 7 starts at byte 7 x 4096 = 28,672. One multiplication,
+one jump. This trick is called RANDOM ACCESS.
+
+WHAT IS INSIDE A PAGE?
+
+A leaf page of a table (see next chapter) holds ROWS - your actual
+data. A row for our users table might be:
+
+    id = 42        (a whole number, INT)
+    name = "ada"   (text, TEXT)
+
+LeafDB writes each row as raw bytes in a compact form:
+
+    [null-flag bits] [id as 8 bytes] [name length + name bytes]
+
+The null-flag is a little checklist saying which columns are empty
+(NULL). This makes storing NULLs almost free.
+
+WHERE IS THIS IN THE CODE?
+
+    leafdb/pager.py   - the cabinet itself: read/write/allocate pages
+    leafdb/rows.py    - turning rows into bytes and back
+
+THE BUFFER POOL (A DESK NEXT TO THE CABINET)
+
+Reading from the real file every time would be slow, so LeafDB keeps
+recently used pages on its "desk" in memory - called the buffer pool.
+If the desk is full, the least recently used page goes back. When a
+query touches a page, most times it's already on the desk (we call
+that a "cache hit").
+
+One safety rule: while a transaction is running, dirty (changed)
+pages stay pinned to the desk. They cannot sneak back to the cabinet
+before they are officially committed. You will see why in chapter 05.

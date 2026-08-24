@@ -60,9 +60,13 @@ cd projects/leafdb
 
 pip install -e .          # optional; provides the `leafdb` command
 python -m leafdb          # interactive REPL (creates leafdb.db)
+python -m leafdb.web      # browser console: http://127.0.0.1:8000
 python demo.py            # scripted feature tour incl. crash recovery
 python -m unittest discover -s tests -v   # full suite incl. differential tests
 ```
+
+New to databases? Read [explanation/](explanation/00_START_HERE.txt) -
+a from-scratch walkthrough of every concept, no CS background assumed.
 
 REPL meta commands: `.tables` `.schema T` `.btree T` `.check T`
 `.explain SELECT...` `.stats` `.vacuum T` `.benchmark` `.quit`
@@ -86,6 +90,7 @@ INDEX SCAN users AS users USING idx_city (city='pune') (est 1 rows)
 | Predicates | Comparisons, AND/OR/NOT with three-valued logic, IS [NOT] NULL, [NOT] BETWEEN, [NOT] IN, [NOT] LIKE (% and _, ASCII case-insensitive like SQLite) |
 | Planner | PK lookup vs index scan vs seq scan by cost; equi-join detection picks hash join (smaller side builds); predicate pushdown below joins; EXPLAIN |
 | Concurrency | Multi-session MVCC snapshot reads; thread-safe shared connections; stress-tested |
+| Studio UI | Browser console: query runner, schema browser, live B+ tree SVG visualizer, EXPLAIN pipeline, stats chips |
 
 ## The C++17 storage core
 

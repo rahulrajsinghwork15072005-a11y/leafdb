@@ -1,0 +1,42 @@
+=====================================================================
+ LEAFDB FROM ZERO - START HERE
+=====================================================================
+
+Hi! This folder explains the whole database project assuming you know
+almost nothing about how databases work inside. No jargon without
+explanation. Read the files in order - each one builds on the last.
+
+THE BIG PICTURE IN ONE PARAGRAPH
+
+A database is a program that stores information so that:
+
+  1. it survives restarts and crashes (durability),
+  2. you can find any piece of it very fast even among millions of rows,
+  3. many questions ("queries") can be asked safely at the same time.
+
+LeafDB does all three. It stores data in fixed-size blocks called
+PAGES, organizes them with a tree structure called a B+ TREE for fast
+lookup, writes every change to a journal called the WRITE-AHEAD LOG
+before touching the data file so crashes can't corrupt anything, and
+understands enough SQL to run real queries with joins and grouping.
+
+READING ORDER
+
+  01_what_is_a_database_even.txt       what problem are we solving?
+  02_how_data_is_stored.txt            pages, rows, bytes
+  03_the_bplus_tree.txt                the index - the heart of it all
+  04_deleting_and_rebalancing.txt      keeping the tree healthy
+  05_write_ahead_log.txt               surviving crashes
+  06_transactions.txt                  BEGIN / COMMIT / ROLLBACK
+  07_sql_to_results.txt                from text you type to rows out
+  08_joins_groupby_nulls.txt           the query features explained
+  09_mvcc_concurrency.txt              many sessions, no fights
+  10_the_cpp_core.txt                  why there are two engines here
+  11_words_you_will_see.txt            mini glossary
+
+A NOTE ON FEAR
+
+None of this requires math beyond counting. The ideas are simple:
+sorted lists, pointers between pages, and writing things down before
+you act. If an explanation below ever feels heavy, take a break and
+re-read the analogy at its start - the analogies carry the truth.

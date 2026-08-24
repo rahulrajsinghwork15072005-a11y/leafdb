@@ -1,0 +1,46 @@
+=====================================================================
+ 04 - DELETING AND REBALANCING (KEEPING THE TREE HEALTHY)
+=====================================================================
+
+THE PROBLEM WITH DELETING
+
+Deleting is harder than inserting. If you just remove a key from a
+leaf, that leaf may end up nearly empty. A tree full of half-empty
+pages wastes space and makes scans read more pages than needed.
+
+THE ANALOGY: TWO FRIDGE SHELVES
+
+Two shelves each hold up to 10 eggs. You want them roughly balanced.
+If one shelf drops to 2 eggs while the neighbor has 9, you don't
+rebuild the fridge - you BORROW an egg from the neighbor. Only if a
+shelf becomes completely empty do you MERGE it with its neighbor and
+remove the divider sign above.
+
+LeafDB does exactly this:
+
+  1. delete the row from its leaf
+  2. if the leaf is now too empty:
+       - try to BORROW one row from the left or right sibling
+         (and fix the separator in the parent)
+  3. if no sibling can spare, MERGE this leaf with a sibling
+     and remove their separator from the parent
+  4. if the parent itself gets too empty, repeat upward
+  5. if the root ends up with a single child, that child becomes
+     the new root and the tree shrinks by one level
+
+A HONEST SHORTCUT: "SEPARATORS MAY LAG"
+
+When the smallest key of a leaf is deleted, real databases sometimes
+leave the old separator above it untouched. LeafDB allows this too.
+The rule it enforces is only: separator must never be BIGGER than the
+smallest key actually in the right subtree. Search still works, we
+just avoid extra writes. This trick is written down in check() so
+tests enforce it forever.
+
+check(): THE TREE DOCTOR
+
+btree.py has a function called check() that walks the whole tree and
+verifies: sorted keys everywhere, all leaves at equal depth, chain of
+leaves matches tree order, no node too empty. The random fuzz tests
+call it every few hundred operations - it has caught real bugs (see
+DEVLOG.md, "merges need the separator").

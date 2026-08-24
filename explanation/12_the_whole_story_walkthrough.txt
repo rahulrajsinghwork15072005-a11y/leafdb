@@ -1,0 +1,65 @@
+=====================================================================
+ 12 - THE WHOLE STORY IN ONE WALKTHROUGH
+=====================================================================
+
+Let's follow ONE statement through the entire system, start to
+finish. You type:
+
+    INSERT INTO users (name, city) VALUES ('ada', 'pune');
+
+and the users table has an autoincrement primary key.
+
+STEP 1 - TEXT BECOMES TOKENS AND A TREE
+The lexer cuts the text into tokens; the parser builds a small tree
+saying: "INSERT into table users, columns [name, city], one row of
+values". The id column is missing, so it will be auto-assigned.
+
+STEP 2 - A TRANSACTION WRAPS EVERYTHING
+No explicit BEGIN was typed, so the engine opens one automatically.
+The pager starts recording which pages get touched.
+
+STEP 3 - FINDING WHERE THE ROW GOES
+id is NULL, so the engine assigns next_rowid (say 501). It walks the
+B+ tree to confirm 501 is free (it must be - rowids only grow).
+
+STEP 4 - THE ROW BECOMES BYTES
+(name='ada', city='pune') is encoded: null-bitmap header, then the
+text fields with length prefixes.
+
+STEP 5 - THE TREE CHANGES SHAPE (MAYBE)
+The encoded row is inserted into the leaf that owns id 501. If that
+leaf overflows 4 KB, it splits in two and the parent gets a new
+separator; if the root splits, the whole tree grows one level. Any
+secondary index on name or city also gets updated.
+
+STEP 6 - CATALOG BOOKKEEPING
+Row count goes up by one, next_rowid becomes 502, and page 0 (the
+catalog) is rewritten so all of this survives restarts.
+
+STEP 7 - COMMIT = THE WAL REMEMBERS
+Every page touched during steps 3-6 is appended to the write-ahead
+log as CRC-checked frames ending with a commit record, then fsynced.
+Only now does the engine report success. From this instant the insert
+is unloseable: even a power cut right here gets replayed at next open.
+
+STEP 8 - LATER, A CHECKPOINT TIDIES UP
+Eventually someone closes cleanly or triggers checkpoint: dirty pages
+are written into the main data file, fsynced, and the WAL is emptied.
+The log's job is done.
+
+AND IF YOU ASK FOR IT BACK?
+
+    SELECT * FROM users WHERE id = 501;
+
+Planner sees id = constant -> PK LOOKUP plan. Three hops down the
+tree, decode the bytes, return one row. About 20-30 microseconds.
+
+=====================================================================
+
+That's the entire system. Everything else in the codebase - MVCC
+sessions, the C++ core, the planner's join choices, EXPLAIN, the
+visualizer in LeafDB Studio - are variations and tooling around the
+eight steps you just read.
+
+If you understood this file, you understand databases better than
+most people who use them every day.

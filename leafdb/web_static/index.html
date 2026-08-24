@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>LeafDB Studio</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+  <span id="logo">leafdb<span> studio</span></span>
+  <div id="chips">
+    <span class="chip" id="chip-pages">pages -</span>
+    <span class="chip" id="chip-cache">cache -</span>
+    <span class="chip" id="chip-wal">wal -</span>
+    <span class="chip" id="chip-txn">autocommit</span>
+  </div>
+</header>
+
+<main>
+<aside id="sidebar">
+  <h2>tables</h2>
+  <div id="tables"><div class="empty">loading...</div></div>
+</aside>
+
+<section id="content">
+  <nav id="tabs">
+    <button data-tab="query" class="active">query</button>
+    <button data-tab="tree">b+ tree</button>
+    <button data-tab="explain">explain</button>
+  </nav>
+
+  <div id="tab-query" class="tab active">
+    <textarea id="sql" rows="5" spellcheck="false"
+      placeholder="SELECT * FROM users WHERE id = 1"></textarea>
+    <div class="rowbar">
+      <button id="run">run (ctrl+enter)</button>
+      <span id="timing"></span>
+    </div>
+    <div id="results"></div>
+  </div>
+
+  <div id="tab-tree" class="tab">
+    <div class="rowbar">
+      <select id="tree-table"></select>
+      <button id="tree-refresh">refresh</button>
+      <span id="tree-stats" class="muted"></span>
+    </div>
+    <div id="treewrap">
+      <svg id="treesvg" width="100%" height="100%"></svg>
+      <div id="nodedetail"></div>
+    </div>
+  </div>
+
+  <div id="tab-explain" class="tab">
+    <div class="rowbar">
+      <input id="explain-sql" placeholder="SELECT ..." spellcheck="false">
+      <button id="explain-run">plan it</button>
+    </div>
+    <div id="pipeline"></div>
+    <pre id="plantext"></pre>
+  </div>
+</section>
+</main>
+<script src="/app.js"></script>
+</body>
+</html>

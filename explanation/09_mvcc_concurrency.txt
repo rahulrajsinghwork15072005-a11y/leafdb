@@ -1,0 +1,50 @@
+=====================================================================
+ 09 - MVCC: MANY SESSIONS WITHOUT FIGHTING
+=====================================================================
+
+THE ANALOGY: READING A STABLE COPY
+
+You are reading page 40 of a shared document. Meanwhile a colleague
+edits page 90 and saves. Your reading is not disturbed - you were
+reading a snapshot from before their save. When you finish and open
+the document again, you see the new version.
+
+MVCC (Multi-Version Concurrency Control) gives every database session
+such snapshots:
+
+    READ COMMITTED  - each statement sees everything committed before
+                      that statement started.
+    REPEATABLE READ - inside BEGIN...COMMIT, your session keeps its
+                      old snapshot even if others commit new data.
+
+HOW LEAFDB DOES IT
+
+Sessions don't share memory. Each Database object has its own buffer
+pool. Commits append atomic batches to the WAL (chapter 05). Between
+statements, a session peeks at the WAL tail: "any new committed
+batches? then adopt them". Inside an explicit transaction it stops
+peeking - the snapshot stays frozen.
+
+Because commits are single all-or-nothing batches, a reader can never
+see half of someone else's transaction. This is enforced by a stress
+test where one session writes rows in groups of 10 while another
+counts them forever - counts must always be multiples of 10.
+
+READERS DON'T BLOCK THE WRITER
+
+A reader holding an old snapshot never asks the writer to wait, and
+the writer's commits never disturb readers. The test suite runs a
+reader mid-scan while 400 commits happen; both sides finish happily.
+
+THE WRITER LOCK
+
+Only actual WRITE statements take the shared per-database lock, and
+only for the duration of that write. Two sessions trying to modify
+data at once queue up politely; readers walk straight past.
+
+CHECKPOINTING WITH COMPANY
+
+The WAL can only be reset (checkpointed) when no other session might
+still need its older contents. LeafDB tracks live sessions and
+refuses checkpointing while they exist; the last session to close
+checkpoints automatically.

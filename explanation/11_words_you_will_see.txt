@@ -1,0 +1,67 @@
+=====================================================================
+ 11 - WORDS YOU WILL SEE (MINI GLOSSARY)
+=====================================================================
+
+PAGE ........ one fixed-size block of the database file (4 KB here).
+              The unit the engine reads and writes.
+
+ROW / RECORD  one item of a table: (id=42, name="ada").
+
+TABLE ....... a named collection of rows with the same shape.
+
+INDEX ....... a structure that makes finding rows by a column fast.
+              LeafDB uses a B+ tree for this.
+
+B+ TREE ..... sorted, self-balancing tree; leaves hold data in order
+              and are linked left-to-right for fast ranges.
+
+ROOT ........ the top page of the tree; where every search begins.
+
+LEAF ........ a bottom tree page containing actual rows.
+
+INTERNAL .... a signpost page routing searches between children.
+
+SPLIT ....... dividing an overflowing page into two when it is full.
+
+BUFFER POOL . memory desk holding recently used pages.
+
+DIRTY PAGE .. a page changed in memory but not yet on disk.
+
+WAL ......... write-ahead log; journal written before changes land,
+              used to redo work after crashes.
+
+fsync ....... "force these bytes physically onto the disk now".
+
+CRC32 ....... a checksum fingerprint; detects torn/corrupt frames.
+
+COMMIT ...... make all changes of a transaction permanent.
+
+ROLLBACK .... throw away all changes of a transaction.
+
+SHADOW PAGE . saved old copy of a page used to undo changes.
+
+MVCC ........ multi-version concurrency control; sessions read
+              snapshots without blocking writers.
+
+SESSION ..... one independent connection to the same database file.
+
+AST ....     abstract syntax tree; SQL text turned into structure.
+
+PLANNER ..... chooses HOW to run a query (which index, which join).
+
+EXPLAIN ..... command that prints the chosen plan instead of running.
+
+HASH JOIN ... join algorithm using a dictionary for equality joins.
+
+3-VALUED LOGIC  comparisons with NULL give UNKNOWN, not FALSE.
+
+PRIMARY KEY . column guaranteed unique per row; the row's identity.
+
+AUTOINCREMENT assigning 1,2,3... automatically for new rows.
+
+CHECKPOINT .. flushing everything into the main file and emptying
+              the WAL.
+
+VACUUM ...... rebuild a table's tree compactly after many deletes.
+
+BENCHMARK ... measuring how fast operations run.

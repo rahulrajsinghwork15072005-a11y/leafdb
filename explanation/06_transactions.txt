@@ -1,0 +1,49 @@
+=====================================================================
+ 06 - TRANSACTIONS (BEGIN, COMMIT, ROLLBACK)
+=====================================================================
+
+THE ANALOGY: DRAFTS ON SCRATCH PAPER
+
+You are rearranging three paragraphs of an essay. You don't edit the
+final document directly - you work on scratch paper. If it looks
+good, copy it in (COMMIT). If it's a mess, throw the paper away and
+the essay is untouched (ROLLBACK).
+
+A transaction is that scratch paper for database changes:
+
+    BEGIN;
+    DELETE FROM orders WHERE user_id = 7;   -- not visible yet!
+    INSERT INTO archive ...                  -- not visible yet!
+    COMMIT;                                  -- now all at once
+
+Two guarantees matter:
+
+  ATOMICITY - all changes land together or none do. There is no such
+  thing as "half a transaction".
+
+  ISOLATION - other sessions cannot see your draft.
+
+HOW LEAFDB DOES IT: SHADOW PAGES
+
+While a transaction runs, every page it touches keeps its OLD image
+in memory (a "shadow"). The live tree uses the new images. If you
+ROLLBACK, LeafDB throws away the new page copies and reinstates the
+shadows - done. Because dirty pages are never allowed to leave the
+memory cache during a transaction (eviction pauses), uncommitted
+data provably never reaches the data file. Nothing to undo on disk.
+
+If you COMMIT instead, the changed pages are appended to the WAL with
+a commit record (previous chapter) and become permanent.
+
+AUTOCOMMIT
+
+Every single statement outside BEGIN/COMMIT is wrapped in its own
+tiny transaction automatically. That is why a lone INSERT still
+survives crashes.
+
+MULTI-STATEMENT TRANSACTIONS
+
+BEGIN ... COMMIT may span many statements and minutes. A bank
+transfer ("take 10 from A, add 10 to B") must be one transaction -
+if the power dies between the two updates, rollback guarantees the
+money didn't vanish into air.

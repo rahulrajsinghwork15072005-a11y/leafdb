@@ -1,0 +1,55 @@
+=====================================================================
+ 07 - HOW SQL TEXT BECOMES A RESULT (THE PIPELINE)
+=====================================================================
+
+You type:
+
+    SELECT city, COUNT(*) AS n FROM orders
+    WHERE amount > 100 GROUP BY city ORDER BY n DESC;
+
+Five machines process this before rows come out.
+
+1) THE LEXER - text -> tokens
+
+   Splits characters into words: SELECT, city, ",", COUNT, "(" ...
+   like separating letters into word cards. Numbers become numbers,
+   'text' becomes a string token.
+
+2) THE PARSER - tokens -> a tree (the AST)
+
+   A recursive-descent parser checks grammar and builds an Abstract
+   Syntax Tree: "this is a SELECT; its columns are ...; the table is
+   orders; the filter is amount > 100; group by city". Precedence is
+   handled here so "a OR b AND c" correctly means "a OR (b AND c)".
+
+3) THE PLANNER - tree -> a plan
+
+   The planner decides HOW to run it. Questions it asks:
+     - does WHERE contain "primary_key = something"? Then skip
+       scanning and jump straight to the row.
+     - is there an index on a compared column? Use it.
+     - does a join connect two tables by equality? Use a HASH JOIN
+       with the smaller side as the build table.
+   The chosen steps are what EXPLAIN prints.
+
+4) THE COMPILER - expressions -> fast closures
+
+   Instead of re-reading the expression tree for every row,
+   LeafDB compiles each expression once into a Python closure where
+   "column city" is already resolved to "slot 0, position 2".
+   Per row it's just two lookups and a comparison.
+
+5) THE EXECUTOR - runs the plan
+
+   scan -> apply pushed-down filters -> joins -> more filters ->
+   grouping/aggregates -> HAVING -> projection -> DISTINCT ->
+   sorting -> LIMIT/OFFSET. NULLs follow three-valued logic at every
+   step (see file 08).
+
+WHERE IN THE CODE?
+
+    sqlparse.py  (steps 1-2)
+    planner.py   (step 3)
+    executor.py  (steps 4-5)
+
+The EXPLAIN tab of LeafDB Studio draws step 3 for you.

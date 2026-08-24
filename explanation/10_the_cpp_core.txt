@@ -1,0 +1,53 @@
+=====================================================================
+ 10 - THE C++ CORE, AND WHY THERE ARE TWO ENGINES
+=====================================================================
+
+WHY C++ EXISTS HERE
+
+Python is wonderful for building logic quickly but every operation
+carries interpreter overhead. The hot path of a database - "read this
+page, walk this node, compare these keys" - runs millions of times,
+so that overhead multiplies. C++ compiles to raw machine code with no
+interpreter tax.
+
+THE SURPRISE: THEY SHARE FILES
+
+leafdb-core (the C++ part) is not a separate database. It reads and
+writes the EXACT SAME files as the Python engine:
+
+    same 4 KB page layout
+    same B+ tree node bytes (big-endian encoding)
+    same WAL frames and CRC32 checksums
+
+The compatibility is proven by tests: Python writes a 500-row tree,
+C++ verifies its structure; C++ writes 2,000 rows, Python searches
+them. Either engine can take over the other's files.
+
+WHAT THE C++ SIDE CONTAINS
+
+Only the storage layer - the hot path that benefits most from native
+speed:
+
+    native/include/leafdb_core.hpp   the interface
+    native/src/core.cpp              pager, B+ tree, WAL, CRC32
+    native/tests/test_core.cpp       randomized oracle tests
+
+The SQL layer stays in Python on purpose. That split mirrors how real
+systems work (SQLite = C core + bindings in many languages).
+
+HOW MUCH FASTER IS C++?
+
+A point lookup through the raw B+ tree:
+    C++ core      ~11 microseconds
+    Python        ~22 microseconds
+Both are fast; C++ removes the interpreter tax. The SQL pipeline above
+them still costs a bit in both languages, which is why prepared
+statements (parse once, run many) exist.
+
+THE BUILD
+
+    make -C native test     (needs g++; on Windows MinGW works)
+
+No external libraries. The only tricky parts were making sure writes
+are flushed to the OS before other handles read them, and matching
+Python's big-endian byte order exactly.

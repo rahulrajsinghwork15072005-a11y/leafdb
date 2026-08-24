@@ -1,0 +1,58 @@
+=====================================================================
+ 03 - THE B+ TREE (THE HEART OF EVERYTHING)
+=====================================================================
+
+THE PROBLEM
+
+Your table has 1,000,000 rows stored across ~4,000 pages. You want
+the row with id = 424242. Scanning every page is too slow. What you
+need is a structure that stays SORTED and lets you jump straight to
+the right page.
+
+THE ANALOGY: A LIBRARY
+
+Imagine books arranged in order by their number. At the entrance
+there's a sign: "numbers 1-1000 -> aisle 1, 1001-2000 -> aisle 2".
+Inside each aisle another sign narrows it down to a shelf. You never
+walk past more than a few signs - you go straight to your shelf.
+
+A B+ TREE is exactly this:
+
+    - at the bottom: LEAF pages holding the actual rows, sorted
+    - above them: INTERNAL pages acting as signs ("keys >= 500 ->
+      go right")
+    - one top page: the ROOT
+
+FINDING id = 424242 ("a search")
+
+Start at the root. Each internal page says which child to enter.
+Descend 2-3 levels. Arrive at the leaf containing your key. Binary-
+search inside it. Done - in 3 hops instead of reading 4,000 pages.
+
+That is why lookups are O(log n): even with a million rows, the tree
+is only 3-4 levels deep, because each level points to hundreds of
+children.
+
+RANGE SCANS: THE SUPERPOWER
+
+Leaf pages are also LINKED left-to-right like beads on a string.
+"Give me ids 100 through 200" becomes: hop to the leaf where 100
+lives, then walk right along the chain until you pass 200. A hash
+table (another famous index) can find single keys but cannot do this
+- that is why databases use trees for the main index.
+
+INSERTING: SPLITS
+
+Insert into the sorted leaf. If the leaf overflows its 4 KB, split it
+into two halves and give the parent a separator key pointing to the
+new right half. If the parent overflows too, split upward. If the
+root splits, a NEW root is created - that is how the tree grows
+downward while every leaf stays at the same depth. Balance for free.
+
+WHERE IN THE CODE?
+
+    leafdb/btree.py   - everything above (~300 lines!)
+    native/src/core.cpp - the same logic again in C++
+
+Both use the exact same byte format, so either can read files the
+other wrote (see file 10).

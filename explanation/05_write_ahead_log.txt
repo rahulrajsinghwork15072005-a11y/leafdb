@@ -1,0 +1,47 @@
+=====================================================================
+ 05 - THE WRITE-AHEAD LOG (SURVIVING CRASHES)
+=====================================================================
+
+THE ANALOGY: THE NOTEBOOK NEXT TO THE LEDGER
+
+Imagine an accountant keeping an official ledger (the data file).
+Before changing the ledger, she first writes the intended change in
+a cheap notebook and draws a line under it saying "COMMITTED". If
+lightning strikes mid-edit, tomorrow morning she replays every
+notebook entry above a "COMMITTED" line into the ledger, and ignores
+any half-written scribble below the last commit line.
+
+That notebook is the WRITE-AHEAD LOG (WAL). The rule that gives it
+power is one sentence:
+
+    Write to the log BEFORE you change the data file, and make sure
+    the log bytes truly hit the disk (fsync) at commit time.
+
+HOW LEAFDB DOES IT
+
+A commit collects the images of every page the transaction touched
+and appends them to the WAL as FRAMES. Each frame has:
+
+    magic "LFDB" | page number | payload length | CRC32 checksum
+
+followed by a special COMMIT record that also stores the new total
+page count. Then fsync forces the bytes physically onto disk.
+
+CRC32 is a fingerprint of the frame's contents. If a crash tore a
+frame in half, its fingerprint won't match - recovery stops there
+and throws away everything after the last good commit. This is why
+half-written transactions can never poison the database.
+
+RECOVERY = REPLAY
+
+When LeafDB opens a database, if the WAL is non-empty it replays each
+complete committed batch into the data file (a blind overwrite - the
+same bytes written twice do no harm), then clears the log.
+
+WHERE IN THE CODE?
+
+    leafdb/wal.py   - frames, append_batch, recover()
+
+The crash tests in tests/test_leafdb.py simulate exactly this:
+commit -> skip checkpoint -> reopen -> data must be there; begin ->
+no commit -> reopen -> data must be gone.

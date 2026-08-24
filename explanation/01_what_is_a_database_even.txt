@@ -1,0 +1,45 @@
+=====================================================================
+ 01 - WHAT IS A DATABASE, EVEN?
+=====================================================================
+
+THE PROBLEM
+
+Imagine you keep a list of 1,000 friends in a text file: name, city,
+phone. Finding "who lives in Pune" is easy - open the file and read
+it. Now imagine 10 million people. Reading the whole file every time
+is too slow. Editing is dangerous: if the power dies halfway through
+your edit, the file may be half-old, half-new, unusable.
+
+A database solves both problems:
+
+  FAST FINDING   -> using sorted structures (see file 03)
+  SAFE CHANGES   -> using a journal (see file 05)
+
+AND WHAT IS LEAFDB?
+
+LeafDB is a small database program written in Python (with part of it
+in C++ for speed). It is not as big or fast as MySQL or PostgreSQL -
+those are built by hundreds of engineers over decades. But LeafDB has
+the same SKELETON:
+
+    you type SQL -> it understands you -> it finds/changes data ->
+    everything survives crashes
+
+WHY BUILD ONE FROM SCRATCH?
+
+Because reading about engines is like reading about swimming. Building
+one forces you to answer questions no article asks: Where exactly does
+the byte go? What happens if we crash right NOW? The whole point of
+this project is that after it, SQL statements stop being magic.
+
+WHAT YOU TYPE VS WHAT THE MACHINE DOES
+
+You type:      SELECT name FROM users WHERE id = 42;
+
+The machine:
+    1. turns your text into structured pieces (parsing),
+    2. makes a plan: "id is the primary key, so use the tree index",
+    3. jumps down the tree (2-3 hops) straight to row 42,
+    4. hands back just that one row.
+
+Each numbered step has its own chapter ahead.
