@@ -15,7 +15,7 @@ KEYWORDS = {
     "DISTINCT", "JOIN", "INNER", "LEFT", "RIGHT", "FULL", "OUTER", "ON",
     "AS", "INSERT", "INTO", "VALUES", "CREATE", "TABLE", "INDEX", "DELETE",
     "UPDATE", "SET", "BEGIN", "COMMIT", "ROLLBACK", "EXPLAIN", "PRIMARY",
-    "KEY", "INT", "TEXT", "COUNT", "SUM", "AVG", "MIN", "MAX",
+    "KEY", "INT", "FLOAT", "TEXT", "COUNT", "SUM", "AVG", "MIN", "MAX",
     "BETWEEN", "LIKE", "DROP",
 }
 
@@ -494,7 +494,7 @@ class Parser:
 
     def expect_ident_or_type(self):
         t = self.peek()
-        if t.kind == "kw" and t.value in ("INT", "TEXT"):
+        if t.kind == "kw" and t.value in ("INT", "FLOAT", "TEXT"):
             return self.next().value
         if t.kind == "ident":
             name = self.next().value

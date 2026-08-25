@@ -546,7 +546,7 @@ class TestSQLParse(unittest.TestCase):
         bads = [
             "SELECT FROM t",
             "INSERT INTO t VALUES (",
-            "CREATE TABLE t (x FLOAT)",
+            "CREATE TABLE t (x BLOB)",
             "SELECT a FROM t WHERE",
             "UPDATE t SET",
         ]
@@ -934,3 +934,4 @@ class TestEngine(TempDirCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+

@@ -1,11 +1,13 @@
 import struct
 
 INT = "INT"
+FLOAT = "FLOAT"
 TEXT = "TEXT"
-SUPPORTED_TYPES = (INT, TEXT)
+SUPPORTED_TYPES = (INT, FLOAT, TEXT)
 
 _NULL_HEADER = struct.Struct(">I")
 _INT_VALUE = struct.Struct(">q")
+_FLOAT_VALUE = struct.Struct(">d")
 _TEXT_LEN = struct.Struct(">H")
 
 
@@ -20,6 +22,8 @@ def encode_row(types, values):
             continue
         if t == INT:
             parts.append(_INT_VALUE.pack(v))
+        elif t == FLOAT:
+            parts.append(_FLOAT_VALUE.pack(v))
         elif t == TEXT:
             raw = v.encode("utf-8")
             if len(raw) > 0xFFFF:
@@ -41,6 +45,10 @@ def decode_row(types, buf):
         elif t == INT:
             (v,) = _INT_VALUE.unpack_from(buf, off)
             off += _INT_VALUE.size
+            out.append(v)
+        elif t == FLOAT:
+            (v,) = _FLOAT_VALUE.unpack_from(buf, off)
+            off += _FLOAT_VALUE.size
             out.append(v)
         elif t == TEXT:
             (n,) = _TEXT_LEN.unpack_from(buf, off)
@@ -65,6 +73,12 @@ def coerce_value(col_type, col_name, value):
         if isinstance(value, int):
             return value
         raise TypeError(f"column {col_name!r} is INT, got {type(value).__name__}")
+    if col_type == FLOAT:
+        if isinstance(value, bool):
+            raise TypeError(f"column {col_name!r} is FLOAT, got boolean")
+        if isinstance(value, (int, float)):
+            return float(value)
+        raise TypeError(f"column {col_name!r} is FLOAT, got {type(value).__name__}")
     if col_type == TEXT:
         if isinstance(value, str):
             return value
