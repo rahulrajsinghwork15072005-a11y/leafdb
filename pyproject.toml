@@ -22,3 +22,9 @@ leafdb = "leafdb.repl:console_main"
 
 [tool.setuptools.packages.find]
 include = ["leafdb*"]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+ignore = ["E501", "F401", "F403", "F405", "E741"]
