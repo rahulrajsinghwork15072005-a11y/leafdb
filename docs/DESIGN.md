@@ -8,15 +8,15 @@ the invariants that keep it correct, and why alternatives were rejected.
 
 ```
 ┌────────────────────────────────────────────────────────────┐
-│ engine.py    transactions · catalog · indexes · fast paths │
+│ engine.py transactions · catalog · indexes · fast paths │
 ├────────────────────────────────────────────────────────────┤
-│ planner.py   scan/join selection        executor.py runtime│
+│ planner.py scan/join selection executor.py runtime│
 ├────────────────────────────────────────────────────────────┤
-│ sqlparse.py  lexer → parser → AST → closure compiler       │
+│ sqlparse.py lexer → parser → AST → closure compiler │
 ├────────────────────────────────────────────────────────────┤
-│ btree.py     B+ tree                    wal.py  redo log   │
+│ btree.py B+ tree wal.py redo log │
 ├────────────────────────────────────────────────────────────┤
-│ pager.py     4 KB pages · LRU pool · shadow paging         │
+│ pager.py 4 KB pages · LRU pool · shadow paging │
 └────────────────────────────────────────────────────────────┘
 ```
 
@@ -26,7 +26,7 @@ flush/checkpoint/eviction. During an open transaction eviction is disabled, so
 uncommitted pages cannot be written behind the log's back.
 
 **B+ tree.** Leaves own sorted `(rowid, row-blob)` cells chained for range scans;
-internals route by separators. Invariants enforced by `check()`:
+internals route by separators. Invariants enforced by `check`:
 
 1. every internal node has `children == keys + 1`;
 2. `separator ≤ min(right subtree)` — may lag after deletes, never exceeds;
@@ -119,11 +119,11 @@ overhead per call and LeafDB's path is shorter. Full scans lose to C by design
 
 1. Cross-process MVCC (file-lock writer arbitration + stat-based refresh)
 2. Expression bytecode VM with register allocation (closure compiler already
-   removed per-row AST walks; a VM would cut call overhead further)
+ removed per-row AST walks; a VM would cut call overhead further)
 3. Sort-merge join for ordered inputs
 4. Whole-file compaction reclaiming dropped-table pages
 5. **C/C++ core** (`leafdb-core`): the storage hot path — pager, B+ tree node
-   ops, CRC framing — as a native library with Python bindings. This machine has
-   no C++ toolchain installed, so it is scoped as its own follow-up project with
-   its own test suite; the Python engine's test battery doubles as the spec it
-   must satisfy before it can replace anything.
+ ops, CRC framing — as a native library with Python bindings. This machine has
+ no C++ toolchain installed, so it is scoped as its own follow-up project with
+ its own test suite; the Python engine's test battery doubles as the spec it
+ must satisfy before it can replace anything.

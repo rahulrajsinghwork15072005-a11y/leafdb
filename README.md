@@ -19,11 +19,11 @@ Docs: [DESIGN.md](docs/DESIGN.md) covers architecture and rejected designs.
 
 ```python
 writer = Database("app.db")
-reader = Database("app.db")          # independent session, own buffer pool
+reader = Database("app.db") # independent session, own buffer pool
 
-reader.execute_script("BEGIN")       # snapshot frozen
-for row in reader.execute("SELECT * FROM events"):   # long scan...
-    ...
+reader.execute_script("BEGIN") # snapshot frozen
+for row in reader.execute("SELECT * FROM events"): # long scan...
+ ...
 # ...while another session keeps committing - no blocking, no torn reads
 ```
 
@@ -49,8 +49,8 @@ LeafDB wins where its path is shortest (point lookups through Python
 bindings). The C engine wins full scans, as it should. Reproduce with:
 
 ```bash
-python -m leafdb.bench       # internal benchmarks + buffer-pool stats
-python -m leafdb.compare     # head-to-head vs sqlite3 on identical data
+python -m leafdb.bench # internal benchmarks + buffer-pool stats
+python -m leafdb.compare # head-to-head vs sqlite3 on identical data
 ```
 
 ## Quickstart
@@ -58,11 +58,11 @@ python -m leafdb.compare     # head-to-head vs sqlite3 on identical data
 ```bash
 cd projects/leafdb
 
-pip install -e .          # optional; provides the `leafdb` command
-python -m leafdb          # interactive REPL (creates leafdb.db)
-python -m leafdb.web      # browser console: http://127.0.0.1:8000
-python demo.py            # scripted feature tour incl. crash recovery
-python -m unittest discover -s tests -v   # full suite incl. differential tests
+pip install -e . # optional; provides the `leafdb` command
+python -m leafdb # interactive REPL (creates leafdb.db)
+python -m leafdb.web # browser console: http://127.0.0.1:8000
+python demo.py # scripted feature tour incl. crash recovery
+python -m unittest discover -s tests -v # full suite incl. differential tests
 ```
 
 New to databases? Read [explanation/](explanation/00_START_HERE.txt) -
@@ -100,7 +100,7 @@ are interchangeable between the two engines in either direction.
 `tests/native_compat.py` proves it.
 
 ```bash
-make -C native test          # randomized oracle tests incl. small pages
+make -C native test # randomized oracle tests incl. small pages
 ./native/build/leafdb-core bench mydata.db 20000
 # inserted 20000 rows ... point lookups ~11 us/op
 ```
@@ -108,25 +108,25 @@ make -C native test          # randomized oracle tests incl. small pages
 ## Design decisions worth defending
 
 1. **B+ tree over hash for the primary index** - sorted linked leaves give
-   O(log n) lookups plus streaming range scans; hashes handle equality-only
-   secondaries.
+ O(log n) lookups plus streaming range scans; hashes handle equality-only
+ secondaries.
 2. **Physical WAL (page images), not logical logs** - redo is a blind
-   overwrite: idempotent, trivially replayable, and rollback never needs
-   logical undo because uncommitted work never reaches disk.
+ overwrite: idempotent, trivially replayable, and rollback never needs
+ logical undo because uncommitted work never reaches disk.
 3. **Shadow paging for rollback** - pre-images captured at first touch inside
-   a transaction; combined with pausing cache eviction mid-transaction,
-   uncommitted bytes provably never hit the data file before their commit
-   record.
+ a transaction; combined with pausing cache eviction mid-transaction,
+ uncommitted bytes provably never hit the data file before their commit
+ record.
 4. **Separators may lag after deletes** - deletes do not rescale ancestors;
-   the enforced invariant is `separator <= min(right subtree)`, which keeps
-   bisect-right routing correct while avoiding cascading writes.
+ the enforced invariant is `separator <= min(right subtree)`, which keeps
+ bisect-right routing correct while avoiding cascading writes.
 5. **Byte-utilization underflow thresholds (1/3 page)** instead of entry
-   counts, so behavior holds whether rows are 12 bytes or 2 KB.
+ counts, so behavior holds whether rows are 12 bytes or 2 KB.
 6. **Lazy transaction snapshots** - read-only transactions skip snapshotting
-   and skip WAL appends entirely.
+ and skip WAL appends entirely.
 7. **Differential testing as the spec** - where SQL semantics get subtle
-   (three-valued logic, NULL ordering, LIKE coercion, IN with NULL), SQLite is
-   the oracle and CI enforces agreement.
+ (three-valued logic, NULL ordering, LIKE coercion, IN with NULL), SQLite is
+ the oracle and CI enforces agreement.
 
 ## Known limitations
 
@@ -134,33 +134,33 @@ make -C native test          # randomized oracle tests incl. small pages
 - Single-process, single-writer; no locking across processes yet.
 - Catalog lives on one 4 KB page, bounding schema size.
 - Dropped tables leave orphaned pages until a future whole-file compaction
-  (per-table vacuum exists).
+ (per-table vacuum exists).
 
 ## Repository layout
 
 ```
 leafdb/
 ├── leafdb/
-│   ├── pager.py        # pages + LRU buffer pool + shadow paging
-│   ├── rows.py         # typed row serialization
-│   ├── btree.py        # B+ tree (splits, borrows/merges, check(), bulk_load)
-│   ├── wal.py          # CRC'd write-ahead log + recovery
-│   ├── catalog.py      # page-0 schema catalog
-│   ├── sqlparse.py     # lexer + recursive-descent parser + AST
-│   ├── planner.py      # cost-based plan builder (+ EXPLAIN text)
-│   ├── executor.py     # closure-compiling executor: joins/aggregates/3VL
-│   ├── engine.py       # Database facade, MVCC sessions, txns, indexes
-│   ├── repl.py         # interactive shell
-│   ├── bench.py        # benchmark suite
-│   └── compare.py      # head-to-head vs sqlite3
-├── native/             # C++17 storage core (binary-compatible)
+│ ├── pager.py # pages + LRU buffer pool + shadow paging
+│ ├── rows.py # typed row serialization
+│ ├── btree.py # B+ tree (splits, borrows/merges, check, bulk_load)
+│ ├── wal.py # CRC'd write-ahead log + recovery
+│ ├── catalog.py # page-0 schema catalog
+│ ├── sqlparse.py # lexer + recursive-descent parser + AST
+│ ├── planner.py # cost-based plan builder (+ EXPLAIN text)
+│ ├── executor.py # closure-compiling executor: joins/aggregates/3VL
+│ ├── engine.py # Database facade, MVCC sessions, txns, indexes
+│ ├── repl.py # interactive shell
+│ ├── bench.py # benchmark suite
+│ └── compare.py # head-to-head vs sqlite3
+├── native/ # C++17 storage core (binary-compatible)
 ├── tests/
-│   ├── test_leafdb.py       # unit tests per layer
-│   ├── test_differential.py # differential tests vs sqlite3
-│   ├── test_concurrency.py  # multi-threaded stress tests
-│   ├── test_mvcc.py         # multi-session snapshot isolation
-│   └── native_compat.py     # Python <-> C++ file compatibility
-├── examples/notes.py   # small CLI app using LeafDB for storage
-├── demo.py             # guided tour
+│ ├── test_leafdb.py # unit tests per layer
+│ ├── test_differential.py # differential tests vs sqlite3
+│ ├── test_concurrency.py # multi-threaded stress tests
+│ ├── test_mvcc.py # multi-session snapshot isolation
+│ └── native_compat.py # Python <-> C++ file compatibility
+├── examples/notes.py # small CLI app using LeafDB for storage
+├── demo.py # guided tour
 └── .github/workflows/ci.yml
 ```

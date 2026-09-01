@@ -17,15 +17,15 @@ the classic questions to exact locations.
 |---|---|
 | "Insert and keep it balanced?" | `BTree.insert/_insert` — recursive descent, `bisect` for slot search, `_split_leaf/_split_internal` push separators up; new root when the root splits |
 | "Range scans?" | `range_scan` — descend to the first candidate leaf, then walk `next_leaf` chain; stops the moment a key exceeds `hi` |
-| "Deletes? That's the hard part." | `delete/_delete/_rebalance` — underflow detection by byte utilization (`_min_bytes()`), borrow-from-left/right rotations (`_borrow_from_*`), merges that pull the parent separator down (`_merge(..., sep=...)`) |
-| "How do you know it's correct?" | `check()` — validates children==keys+1, separator ≤ min(right subtree), leaf-chain order equals tree order, uniform depth, occupancy; fuzz-tested in `tests/test_leafdb.py::test_oracle_random_operations` with mid-run checks |
+| "Deletes? That's the hard part." | `delete/_delete/_rebalance` — underflow detection by byte utilization (`_min_bytes`), borrow-from-left/right rotations (`_borrow_from_*`), merges that pull the parent separator down (`_merge(..., sep=...)`) |
+| "How do you know it's correct?" | `check` — validates children==keys+1, separator ≤ min(right subtree), leaf-chain order equals tree order, uniform depth, occupancy; fuzz-tested in `tests/test_leafdb.py::test_oracle_random_operations` with mid-run checks |
 | "Why can separators go stale?" | Deletes don't rescale ancestors; invariant enforced is `sep ≤ min(right)` which keeps bisect_right routing correct — same spirit as SQLite |
 
 ## Durability
 
 | Question | Where |
 |---|---|
-| "Write-ahead logging — walk me through a commit" | `engine.commit` → `pager.collect_commit()` gathers touched page images → `wal.append_batch` frames each page (magic+page+length+CRC32), ends batch with commit record carrying the new file length, then fsync |
+| "Write-ahead logging — walk me through a commit" | `engine.commit` → `pager.collect_commit` gathers touched page images → `wal.append_batch` frames each page (magic+page+length+CRC32), ends batch with commit record carrying the new file length, then fsync |
 | "Crash mid-commit?" | Recovery reads sequentially; any bad magic / short read / CRC mismatch discards the rest of the log (`wal.recover` loop breaks) → torn tail gone |
 | "Crash after commit, before checkpoint?" | Committed batches replayed into the data file on next open (`Database.__init__` → `recover`), then WAL resets |
 | "Rollback?" | Shadow paging: `Pager.write` captures pre-images into `self.shadow` on first touch per transaction; `rollback_txn` reinstates them. Uncommitted bytes never touch disk because dirty-page eviction is paused while a transaction is open |

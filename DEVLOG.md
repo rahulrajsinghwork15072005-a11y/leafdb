@@ -31,13 +31,13 @@ maybe three hours, but it felt like a week).
 
 ## Merges need the separator
 
-Same debugging session, found by adding a `check()` method that walks the tree
+Same debugging session, found by adding a `check` method that walks the tree
 asserting: children == keys + 1, separator ≤ min(right subtree), leaf chain
 order equals tree order, all leaves at equal depth. First run after enabling
 it flagged an internal node with 13 children and 11 separators — exactly two
 too few keys. Counted merges: two cascaded internal merges had combined
 `left.keys + right.keys` without pulling the parent separator down between
-them. The fix is one parameter (`_merge(low, high, sep)`). Without `check()`
+them. The fix is one parameter (`_merge(low, high, sep)`). Without `check`
 running mid-fuzz I would never have found this; without the fuzz loop it
 wouldn't have been reached. Lesson written into the test file as a comment to
 my future self.
@@ -63,11 +63,11 @@ the wrong source. Rollback now restores shadow pre-images captured when the
 transaction first touches each page. Also added the zero-guard to scans so a
 corrupt pointer can loop silently ever again.
 
-## flush() means flush
+## flush means flush
 
 The C++ core kept reading truncated files written by the Python engine.
-Python's `flush()` iterated dirty pages calling `file.write(...)` — into the
-fstream user-space buffer — and never called `flush()` on the stream unless
+Python's `flush` iterated dirty pages calling `file.write(...)` — into the
+fstream user-space buffer — and never called `flush` on the stream unless
 fsync was requested. Any other process (or the C++ tool) saw a short file.
 One added line. This is why cross-language tests are worth writing even when
 single-language tests are green.
